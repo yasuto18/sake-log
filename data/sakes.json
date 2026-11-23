@@ -1,5 +1,25 @@
 [
   {
+    "id": "sake-1795405318860",
+    "name": "日本刀（かたな）超辛口 純米吟醸",
+    "grade": "純米吟醸",
+    "brewery": "花の舞酒造",
+    "prefecture": "静岡県",
+    "city": "浜松市浜名区",
+    "rice": "",
+    "polishing": "",
+    "tags": [
+      "辛口"
+    ],
+    "temp": "冷酒",
+    "date": "2026-05-15",
+    "shop": "日本酒原価酒蔵",
+    "notes": "EXTRA DRY 限定酒。アルコール度数13.5%（表記：HANANOMAI SAKE BREWERY / ALCOHOL 13.5% BY VOLUME）。",
+    "images": [
+      "images/sake-1795405318860_1795405318879_1.jpeg"
+    ]
+  },
+  {
     "id": "sake-1795405255155",
     "name": "ソルティ パンチ",
     "grade": "普通酒・その他",
