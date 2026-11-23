@@ -35,21 +35,27 @@
       color: var(--text-main);
       font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
       line-height: 1.5;
-      padding-bottom: 84px;
+      padding-bottom: 40px;
     }
 
-    /* Header */
+    /* Header & Top Navigation */
     header {
       position: sticky;
       top: 0;
       z-index: 40;
-      background: rgba(14, 15, 26, 0.92);
+      background: rgba(14, 15, 26, 0.94);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid var(--border-muted);
-      padding: 12px 16px;
+      padding: 10px 14px;
+    }
+
+    .header-top {
+      max-width: 760px;
+      margin: 0 auto 10px auto;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
     }
 
     .brand {
@@ -81,16 +87,53 @@
 
     .header-actions {
       display: flex;
-      gap: 8px;
+      gap: 6px;
+      align-items: center;
+    }
+
+    /* Top Segmented Switcher (一覧 / ダッシュボード) */
+    .top-switcher {
+      max-width: 760px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-muted);
+      border-radius: var(--radius-sm);
+      padding: 3px;
+      gap: 4px;
+    }
+
+    .switch-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-sub);
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .switch-btn.active {
+      background: var(--accent-plum);
+      color: #FFF;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--accent-gold);
     }
 
     .btn {
       border: 1px solid var(--border-muted);
       background: var(--bg-surface);
       color: var(--text-main);
-      padding: 6px 12px;
+      padding: 6px 10px;
       border-radius: var(--radius-sm);
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
@@ -98,6 +141,7 @@
       justify-content: center;
       gap: 4px;
       transition: all 0.2s;
+      white-space: nowrap;
     }
 
     .btn-primary {
@@ -122,6 +166,16 @@
       transform: scale(0.97);
     }
 
+    .spin {
+      animation: spinAnim 0.8s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spinAnim {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
     /* Container & Views */
     .container {
       max-width: 760px;
@@ -135,45 +189,6 @@
 
     .view-section.active {
       display: block;
-    }
-
-    /* Bottom Navigation (Page Switcher) */
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 50;
-      background: rgba(14, 15, 26, 0.96);
-      backdrop-filter: blur(12px);
-      border-top: 1px solid var(--border-muted);
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-
-    .nav-item {
-      background: none;
-      border: none;
-      color: var(--text-sub);
-      padding: 10px 8px;
-      font-size: 12px;
-      font-weight: 700;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-      cursor: pointer;
-      transition: color 0.2s;
-    }
-
-    .nav-item.active {
-      color: var(--accent-gold);
-    }
-
-    .nav-icon {
-      font-size: 18px;
-      line-height: 1;
     }
 
     /* Dashboard Page */
@@ -678,14 +693,25 @@
 <body>
 
 <header>
-  <div class="brand">
-    <div class="brand-icon">酒</div>
-    <h1>酒日記</h1>
+  <div class="header-top">
+    <div class="brand">
+      <div class="brand-icon">酒</div>
+      <h1>酒日記</h1>
+    </div>
+    <div class="header-actions">
+      <button class="btn" id="refresh-btn" onclick="refreshData()" title="最新データを再読み込み">
+        <span id="refresh-icon">↻</span> 更新
+      </button>
+      <button class="btn" onclick="openModal('settings-modal')">設定</button>
+      <button class="btn btn-primary" onclick="openAddModal()">＋ 記録</button>
+    </div>
   </div>
-  <div class="header-actions">
-    <button class="btn" onclick="openModal('settings-modal')">設定</button>
-    <button class="btn btn-primary" onclick="openAddModal()">＋ 記録</button>
-  </div>
+
+  <!-- 画面上部ページ切り替えボタン -->
+  <nav class="top-switcher">
+    <button class="switch-btn active" id="nav-list" onclick="switchPage('list')">🍶 一覧</button>
+    <button class="switch-btn" id="nav-dashboard" onclick="switchPage('dashboard')">🗾 ダッシュボード</button>
+  </nav>
 </header>
 
 <div class="container">
@@ -732,7 +758,7 @@
         <div class="map-breadcrumb" id="map-breadcrumb">
           <span>日本全国（都道府県別）</span>
         </div>
-        <button class="btn" id="btn-filter-from-map" style="padding:4px 10px; font-size:12px; display:none;" onclick="goToListWithCurrentArea()">この地域の酒一覧を見る &rsaquo;</button>
+        <button class="btn btn-gold" id="btn-filter-from-map" style="padding:4px 10px; font-size:12px; display:none;" onclick="goToListWithCurrentArea()">この地域の酒一覧 &rsaquo;</button>
       </div>
 
       <div class="map-viewport" id="map-viewport">
@@ -742,29 +768,17 @@
       </div>
 
       <div class="map-legend">
-        <span>※都道府県をタップで市区町村へ拡大</span>
+        <span>※県タップで市区町村へ拡大（東京都は本土優先表示）</span>
         <div class="legend-swatches">
           <div class="legend-item"><span class="legend-swatch" style="background:#1A2B3A"></span>0</div>
-          <div class="legend-item"><span class="legend-swatch" style="background:#3C4554"></span>1</div>
-          <div class="legend-item"><span class="legend-swatch" style="background:#7A3E5A"></span>2〜3</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:#7A3E5A"></span>1</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:#A65378"></span>2〜3</div>
           <div class="legend-item"><span class="legend-swatch" style="background:#C9A36A"></span>4+</div>
         </div>
       </div>
     </div>
   </section>
 </div>
-
-<!-- ボトムナビゲーション（一覧 / ダッシュボード 切り替え） -->
-<nav class="bottom-nav">
-  <button class="nav-item active" id="nav-list" onclick="switchPage('list')">
-    <span class="nav-icon">🍶</span>
-    <span>一覧</span>
-  </button>
-  <button class="nav-item" id="nav-dashboard" onclick="switchPage('dashboard')">
-    <span class="nav-icon">🗾</span>
-    <span>ダッシュボード</span>
-  </button>
-</nav>
 
 <!-- 詳細モーダル（編集・削除ボタン付き） -->
 <div class="modal-backdrop" id="detail-modal" onclick="closeModalOnBackdrop(event, 'detail-modal')">
@@ -928,6 +942,27 @@
     { code: "46", name: "鹿児島県" }, { code: "47", name: "沖縄県" }
   ];
 
+  // 英語名 -> 日本語都道府県名マッピング（japan.geojson対応）
+  const PREF_EN_MAP = {
+    "Hokkai Do": "北海道", "Aomori Ken": "青森県", "Iwate Ken": "岩手県", "Miyagi Ken": "宮城県",
+    "Akita Ken": "秋田県", "Yamagata Ken": "山形県", "Fukushima Ken": "福島県", "Ibaraki Ken": "茨城県",
+    "Tochigi Ken": "栃木県", "Gunma Ken": "群馬県", "Saitama Ken": "埼玉県", "Chiba Ken": "千葉県",
+    "Tokyo To": "東京都", "Kanagawa Ken": "神奈川県", "Niigata Ken": "新潟県", "Toyama Ken": "富山県",
+    "Ishikawa Ken": "石川県", "Fukui Ken": "福井県", "Yamanashi Ken": "山梨県", "Nagano Ken": "長野県",
+    "Gifu Ken": "岐阜県", "Shizuoka Ken": "静岡県", "Aichi Ken": "愛知県", "Mie Ken": "三重県",
+    "Shiga Ken": "滋賀県", "Kyoto Fu": "京都府", "Osaka Fu": "大阪府", "Hyogo Ken": "兵庫県",
+    "Nara Ken": "奈良県", "Wakayama Ken": "和歌山県", "Tottori Ken": "鳥取県", "Shimane Ken": "島根県",
+    "Okayama Ken": "岡山県", "Hiroshima Ken": "広島県", "Yamaguchi Ken": "山口県", "Tokushima Ken": "徳島県",
+    "Kagawa Ken": "香川県", "Ehime Ken": "愛媛県", "Kochi Ken": "高知県", "Fukuoka Ken": "福岡県",
+    "Saga Ken": "佐賀県", "Nagasaki Ken": "長崎県", "Kumamoto Ken": "熊本県", "Oita Ken": "大分県",
+    "Miyazaki Ken": "宮崎県", "Kagoshima Ken": "鹿児島県", "Okinawa Ken": "沖縄県"
+  };
+
+  // 東京都の島嶼部リスト（本土ズーム時の計算から除外する対象）
+  const TOKYO_ISLANDS = [
+    "大島町", "利島村", "新島村", "神津島村", "三宅村", "御蔵島村", "八丈町", "青ヶ島村", "小笠原村"
+  ];
+
   // GeoJSONデータソース
   const JAPAN_PREF_GEOJSON_URL = "https://raw.githubusercontent.com/dataofjapan/land/master/japan.geojson";
   const CITY_GEOJSON_BASE_URL = "https://raw.githubusercontent.com/niiyz/JapanCityGeoJson/master/geojson/prefectures";
@@ -989,6 +1024,25 @@
     renderList();
   });
 
+  // 更新ボタン処理（キャッシュをバイパスして最新JSONを再取得）
+  async function refreshData() {
+    const icon = document.getElementById("refresh-icon");
+    icon.classList.add("spin");
+    try {
+      await loadSakeData();
+      renderList();
+      if (currentPage === "dashboard") {
+        if (mapLevel === "prefecture" && selectedPrefecture) {
+          await renderPrefectureMap(selectedPrefecture, selectedCity);
+        } else {
+          await renderJapanMap();
+        }
+      }
+    } finally {
+      setTimeout(() => icon.classList.remove("spin"), 350);
+    }
+  }
+
   // ページ切り替え（一覧 ⇔ ダッシュボード）
   async function switchPage(page) {
     currentPage = page;
@@ -1021,7 +1075,29 @@
 
   async function loadSakeData() {
     try {
-      const res = await fetch(`data/sakes.json?t=${Date.now()}`);
+      // GitHub API が設定されている場合は CDN キャッシュ遅延を避けるため API からも最新取得を試行
+      const owner = localStorage.getItem("sake_gh_owner");
+      const repo = localStorage.getItem("sake_gh_repo");
+      const token = localStorage.getItem("sake_gh_token");
+
+      if (owner && repo && token) {
+        const apiRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data/sakes.json?t=${Date.now()}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store"
+        });
+        if (apiRes.ok) {
+          const meta = await apiRes.json();
+          const decoded = decodeURIComponent(escape(atob(meta.content.replace(/
+/g, ""))));
+          const parsed = JSON.parse(decoded);
+          if (Array.isArray(parsed)) {
+            sakeList = parsed;
+            return;
+          }
+        }
+      }
+
+      const res = await fetch(`data/sakes.json?t=${Date.now()}`, { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         sakeList = Array.isArray(data) ? data : SAMPLE_SAKES;
@@ -1033,11 +1109,12 @@
     }
   }
 
+  // ヒートマップカラー算出（1本目から明確に発光する配色）
   function getHeatmapColor(count) {
     if (!count || count === 0) return "#1A2B3A";
-    if (count === 1) return "#3C4554";
-    if (count <= 3) return "#7A3E5A";
-    return "#C9A36A";
+    if (count === 1) return "#7A3E5A";      // 1本で臙脂色に発光
+    if (count <= 3) return "#A65378";      // 2〜3本で明るい臙脂
+    return "#C9A36A";                      // 4本以上でゴールド
   }
 
   // ダッシュボード Step 1: 日本全国（都道府県別）マップ描画
@@ -1058,7 +1135,9 @@
 
       const counts = {};
       sakeList.forEach(s => {
-        counts[s.prefecture] = (counts[s.prefecture] || 0) + 1;
+        if (s.prefecture) {
+          counts[s.prefecture] = (counts[s.prefecture] || 0) + 1;
+        }
       });
 
       const conqueredCount = Object.keys(counts).length;
@@ -1068,9 +1147,15 @@
       document.getElementById("stat-total").textContent = `${sakeList.length} 本`;
 
       drawGeoJsonMap(japanGeoCache, (feature) => {
-        const rawName = feature.properties.nam_ja || feature.properties.name || "";
-        const prefObj = PREFECTURES.find(p => rawName.includes(p.name.replace(/[都府県]$/, "")) || p.name === rawName);
-        return prefObj ? prefObj.name : rawName;
+        const props = feature.properties || {};
+        if (props.nam_ja) return props.nam_ja;
+        if (props.name && PREF_EN_MAP[props.name]) return PREF_EN_MAP[props.name];
+        if (props.id) {
+          const codeStr = String(props.id).padStart(2, "0");
+          const found = PREFECTURES.find(p => p.code === codeStr);
+          if (found) return found.name;
+        }
+        return props.name || "";
       }, counts, (prefName) => {
         renderPrefectureMap(prefName);
       });
@@ -1081,7 +1166,7 @@
     }
   }
 
-  // ダッシュボード Step 2: 都道府県の市区町村マップへドリルダウン
+  // ダッシュボード Step 2: 都道府県の市区町村マップへドリルダウン（東京都の島嶼部除外フィット対応）
   async function renderPrefectureMap(prefName, initialCity = null) {
     const prefObj = PREFECTURES.find(p => p.name === prefName);
     if (!prefObj) return;
@@ -1104,7 +1189,9 @@
       const prefSakes = sakeList.filter(s => s.prefecture === prefName);
       const cityCounts = {};
       prefSakes.forEach(s => {
-        cityCounts[s.city] = (cityCounts[s.city] || 0) + 1;
+        if (s.city) {
+          cityCounts[s.city] = (cityCounts[s.city] || 0) + 1;
+        }
       });
 
       document.getElementById("kpi-area-label").textContent = `${prefName} 制覇市区町村`;
@@ -1112,17 +1199,28 @@
       document.getElementById("kpi-total-label").textContent = `${prefName} 記録本数`;
       document.getElementById("stat-total").textContent = `${prefSakes.length} 本`;
 
-      drawGeoJsonMap(cityGeoCache[prefObj.code], (feature) => {
+      const getCityName = (feature) => {
         const p = feature.properties;
         const city = p.N03_003 || "";
         const ward = p.N03_004 || "";
         if (city && ward && city !== ward) return `${city}${ward}`;
         return ward || city || p.name || "不明";
-      }, cityCounts, (cityName) => {
+      };
+
+      // 東京都の場合は島嶼部を除外した本土（23区・多摩地域）をフィット基準にする
+      let fitTargetGeo = cityGeoCache[prefObj.code];
+      if (prefObj.code === "13") {
+        fitTargetGeo = {
+          type: "FeatureCollection",
+          features: cityGeoCache[prefObj.code].features.filter(f => !TOKYO_ISLANDS.includes(getCityName(f)))
+        };
+      }
+
+      drawGeoJsonMap(cityGeoCache[prefObj.code], getCityName, cityCounts, (cityName) => {
         selectedCity = (selectedCity === cityName) ? null : cityName;
         updateBreadcrumbAndBanner();
         highlightSelectedCity();
-      });
+      }, fitTargetGeo);
 
       if (selectedCity) highlightSelectedCity();
     } catch (err) {
@@ -1132,7 +1230,7 @@
     }
   }
 
-  function drawGeoJsonMap(geoData, getNameFn, countsMap, onClickFn) {
+  function drawGeoJsonMap(geoData, getNameFn, countsMap, onClickFn, fitGeoData = null) {
     const viewport = document.getElementById("map-viewport");
     const width = viewport.clientWidth || 360;
     const height = viewport.clientHeight || 360;
@@ -1144,13 +1242,16 @@
     const g = svg.append("g");
 
     const zoom = d3.zoom()
-      .scaleExtent([1, 8])
+      .scaleExtent([0.8, 12])
       .on("zoom", (event) => {
         g.attr("transform", event.transform);
       });
     svg.call(zoom);
 
-    const projection = d3.geoMercator().fitExtent([[14, 14], [width - 14, height - 14]], geoData);
+    const projection = d3.geoMercator().fitExtent(
+      [[16, 16], [width - 16, height - 16]],
+      fitGeoData || geoData
+    );
     const pathGenerator = d3.geoPath().projection(projection);
 
     g.selectAll("path")
@@ -1175,6 +1276,9 @@
       })
       .on("click", function(event, d) {
         const name = getNameFn(d);
+        const cnt = countsMap[name] || 0;
+        tooltip.style.display = "block";
+        tooltip.innerHTML = `<strong>${name}</strong>：${cnt}本`;
         onClickFn(name);
       });
   }
@@ -1383,7 +1487,8 @@
     const item = sakeList.find(s => s.id === id);
     if (!item) return;
 
-    if (!confirm(`「${item.name}」の記録を削除しますか？\n（GitHub上のデータも削除されます）`)) {
+    if (!confirm(`「${item.name}」の記録を削除しますか？
+（GitHub上のデータも削除されます）`)) {
       return;
     }
 
@@ -1398,7 +1503,6 @@
     }
 
     try {
-      // 1. 最新の data/sakes.json を取得
       const getRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data/sakes.json`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -1407,16 +1511,15 @@
 
       const jsonMeta = await getRes.json();
       const fileSha = jsonMeta.sha;
-      const decoded = decodeURIComponent(escape(atob(jsonMeta.content.replace(/\n/g, ""))));
+      const decoded = decodeURIComponent(escape(atob(jsonMeta.content.replace(/
+/g, ""))));
       const currentData = JSON.parse(decoded);
 
-      // 2. 該当IDを除外
       const updatedData = currentData.filter(s => s.id !== id);
       const updatedContentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(updatedData, null, 2))));
 
       await githubPutFile(owner, repo, token, "data/sakes.json", updatedContentBase64, `Delete sake: ${item.name}`, fileSha);
 
-      // 3. 紐づく画像ファイルがあればリポジトリから削除（存在しなくてもエラーにしない）
       if (Array.isArray(item.images)) {
         for (const imgPath of item.images) {
           if (imgPath.startsWith("images/")) {
@@ -1473,7 +1576,8 @@
 
       alert("JSONの内容をフォームに反映しました！ラベル写真を選択して登録してください。");
     } catch (err) {
-      alert("JSONの形式が正しくありません。括弧の過不足などを確認してください。\nエラー: " + err.message);
+      alert("JSONの形式が正しくありません。括弧の過不足などを確認してください。
+エラー: " + err.message);
     }
   }
 
@@ -1532,7 +1636,6 @@
       const id = isEdit ? editId : `sake-${Date.now()}`;
       const uploadedPaths = [];
 
-      // 1. 新しい画像が選択された場合のみアップロード
       for (let i = 0; i < files.length; i++) {
         const base64 = await fileToBase64(files[i]);
         const ext = files[i].name.split(".").pop() || "jpg";
@@ -1541,7 +1644,6 @@
         uploadedPaths.push(path);
       }
 
-      // 2. 既存 sakes.json の取得
       let currentData = [];
       let fileSha = null;
       const getRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data/sakes.json`, {
@@ -1551,7 +1653,8 @@
       if (getRes.ok) {
         const jsonMeta = await getRes.json();
         fileSha = jsonMeta.sha;
-        const decoded = decodeURIComponent(escape(atob(jsonMeta.content.replace(/\n/g, ""))));
+        const decoded = decodeURIComponent(escape(atob(jsonMeta.content.replace(/
+/g, ""))));
         currentData = JSON.parse(decoded);
       }
 
@@ -1591,7 +1694,6 @@
         currentData.unshift(entryData);
       }
 
-      // 3. sakes.json 更新コミット
       const updatedContentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(currentData, null, 2))));
       await githubPutFile(
         owner, repo, token,
