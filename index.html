@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0E0F1A">
-  <!-- D3.js & TopoJSON for Japan Map -> City Drilldown -->
+  <!-- D3.js for Japan Map -> City Drilldown -->
   <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
   <style>
     :root {
@@ -631,7 +631,7 @@
     </div>
   </section>
 
-  <!-- 検索・特定名称フィルター（赤白ロゼオレンジ廃止） -->
+  <!-- 検索・特定名称フィルター -->
   <section class="filter-section">
     <div class="search-row">
       <input type="text" id="search-input" class="search-input" placeholder="銘柄・酒蔵・都道府県・市区町村・酒米で検索..." oninput="renderList()">
@@ -666,7 +666,7 @@
   </div>
 </div>
 
-<!-- 新規記録モーダル（GitHub API直接アップロード） -->
+<!-- 新規記録モーダル（JSON自動入力 ＋ GitHub API直接アップロード） -->
 <div class="modal-backdrop" id="add-modal" onclick="closeModalOnBackdrop(event, 'add-modal')">
   <div class="modal-panel">
     <div class="modal-header">
@@ -674,6 +674,13 @@
       <button class="close-btn" onclick="closeModal('add-modal')">&times;</button>
     </div>
     <form id="add-form" onsubmit="submitSake(event)">
+      <!-- JSON一括入力エリア -->
+      <div class="form-group" style="background: rgba(201, 163, 106, 0.08); border: 1px dashed var(--accent-gold); padding: 10px; border-radius: var(--radius-sm);">
+        <label class="form-label" style="color: var(--accent-gold);">JSONから自動入力（Geminiで生成したJSONを貼付）</label>
+        <textarea id="json-paste-input" class="form-control" rows="3" placeholder='{"name": "本まぐろ 純米吟醸", ...}' style="font-size: 12px; font-family: monospace; margin-bottom: 6px;"></textarea>
+        <button type="button" class="btn btn-gold" style="width: 100%; justify-content: center; padding: 6px; font-size: 12px;" onclick="applyJsonToForm()">JSONの内容をフォームに反映</button>
+      </div>
+
       <div class="form-group">
         <label class="form-label">ラベル写真（表・裏 最大2枚）</label>
         <input type="file" id="sake-photos" class="form-control" accept="image/*" multiple>
@@ -733,6 +740,7 @@
           <span class="tag-option" onclick="toggleTag(this)">にごり</span>
           <span class="tag-option" onclick="toggleTag(this)">木桶仕込み</span>
           <span class="tag-option" onclick="toggleTag(this)">スパークリング</span>
+          <span class="tag-option" onclick="toggleTag(this)">辛口</span>
         </div>
       </div>
       <div class="form-row">
@@ -883,8 +891,8 @@
   let sakeList = [];
   let currentGrade = "ALL";
   let mapLevel = "japan"; // "japan" | "prefecture"
-  let selectedPrefecture = null; // 例: "新潟県"
-  let selectedCity = null;       // 例: "新潟市中央区"
+  let selectedPrefecture = null;
+  let selectedCity = null;
 
   // GeoJSONキャッシュ
   let japanGeoCache = null;
@@ -948,7 +956,6 @@
         japanGeoCache = await res.json();
       }
 
-      // 都道府県ごとの件数集計
       const counts = {};
       sakeList.forEach(s => {
         counts[s.prefecture] = (counts[s.prefecture] || 0) + 1;
@@ -960,7 +967,6 @@
 
       drawGeoJsonMap(japanGeoCache, (feature) => {
         const rawName = feature.properties.nam_ja || feature.properties.name || "";
-        // "Tokyo To" や "Hokkaido" 表記揺れ吸収
         const prefObj = PREFECTURES.find(p => rawName.includes(p.name.replace(/[都府県]$/, "")) || p.name === rawName);
         return prefObj ? prefObj.name : rawName;
       }, counts, (prefName) => {
@@ -1005,13 +1011,11 @@
 
       drawGeoJsonMap(cityGeoCache[prefObj.code], (feature) => {
         const p = feature.properties;
-        // 政令指定都市の区対応（例: N03_003="新潟市", N03_004="中央区" -> "新潟市中央区"）
         const city = p.N03_003 || "";
         const ward = p.N03_004 || "";
         if (city && ward && city !== ward) return `${city}${ward}`;
         return ward || city || p.name || "不明";
       }, cityCounts, (cityName) => {
-        // 同じ市区町村を再タップしたら県全体に戻す
         selectedCity = (selectedCity === cityName) ? null : cityName;
         updateBreadcrumbAndBanner();
         highlightSelectedCity();
@@ -1116,18 +1120,15 @@
     const keyword = document.getElementById("search-input").value.trim().toLowerCase();
 
     const filtered = sakeList.filter(item => {
-      // エリア絞り込み
       if (selectedPrefecture && item.prefecture !== selectedPrefecture) return false;
       if (selectedCity && item.city !== selectedCity) return false;
 
-      // 特定名称絞り込み
       if (currentGrade !== "ALL") {
         if (currentGrade === "純米" && !["純米酒", "特別純米", "純米"].includes(item.grade)) return false;
         if (currentGrade === "本醸造・その他" && !["大吟醸", "吟醸", "特別本醸造", "本醸造", "普通酒・その他"].includes(item.grade)) return false;
         if (["純米大吟醸", "純米吟醸"].includes(currentGrade) && item.grade !== currentGrade) return false;
       }
 
-      // キーワード検索
       if (keyword) {
         const target = [
           item.name, item.brewery, item.prefecture, item.city,
@@ -1214,6 +1215,46 @@
     highlightSelectedCity();
     renderList();
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // 貼り付けたJSONをフォームの各項目へ自動反映
+  function applyJsonToForm() {
+    const raw = document.getElementById("json-paste-input").value.trim();
+    if (!raw) {
+      alert("JSONテキストを貼り付けてください。");
+      return;
+    }
+
+    try {
+      const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+      const data = JSON.parse(cleaned);
+
+      if (data.name) document.getElementById("f-name").value = data.name;
+      if (data.grade) document.getElementById("f-grade").value = data.grade;
+      if (data.brewery) document.getElementById("f-brewery").value = data.brewery;
+      if (data.prefecture) document.getElementById("f-prefecture").value = data.prefecture;
+      if (data.city) document.getElementById("f-city").value = data.city;
+      if (data.rice) document.getElementById("f-rice").value = data.rice;
+      if (data.polishing) document.getElementById("f-polishing").value = data.polishing;
+      if (data.temp) document.getElementById("f-temp").value = data.temp;
+      if (data.date) document.getElementById("f-date").value = data.date;
+      if (data.shop) document.getElementById("f-shop").value = data.shop;
+      if (data.notes) document.getElementById("f-notes").value = data.notes;
+
+      const tags = Array.isArray(data.tags) ? data.tags : [];
+      document.querySelectorAll("#tag-selector .tag-option").forEach(el => {
+        const tagText = el.textContent.trim();
+        if (tags.includes(tagText)) {
+          el.classList.add("selected");
+        } else {
+          el.classList.remove("selected");
+        }
+      });
+
+      alert("JSONの内容をフォームに反映しました！ラベル写真を選択して登録してください。");
+    } catch (err) {
+      alert("JSONの形式が正しくありません。括弧の過不足などを確認してください。\nエラー: " + err.message);
+    }
   }
 
   // タグ選択トグル
@@ -1324,6 +1365,7 @@
       sakeList = currentData;
       closeModal("add-modal");
       document.getElementById("add-form").reset();
+      document.querySelectorAll("#tag-selector .tag-option.selected").forEach(el => el.classList.remove("selected"));
       await renderJapanMap();
       renderList();
       alert("日本酒の記録をGitHubへ保存しました！");
