@@ -1,5 +1,27 @@
 [
   {
+    "id": "sake-1795405844290",
+    "name": "光栄菊 Hello! KOUEIGIKU",
+    "grade": "純米吟醸",
+    "brewery": "光栄菊酒造",
+    "prefecture": "佐賀県",
+    "city": "小城市",
+    "rice": "愛山",
+    "polishing": "50%",
+    "tags": [
+      "生酒",
+      "無濾過",
+      "原酒"
+    ],
+    "temp": "冷酒",
+    "date": "2026-03-31",
+    "shop": "KISSYO SELECT トレッサ横浜店",
+    "notes": "黒ラベル・金の三日月デザイン（KOUEIGIKU SAKE BREWERY / SAGA JAPAN）。特定名称非公開銘柄。",
+    "images": [
+      "images/sake-1795405844290_1795405844312_1.jpeg"
+    ]
+  },
+  {
     "id": "sake-1795405713114",
     "name": "紫宙（しそら）純米吟醸 ストロベリーラベル 本生",
     "grade": "純米吟醸",
