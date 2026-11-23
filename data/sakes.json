@@ -1,5 +1,23 @@
 [
   {
+    "id": "sake-1795406445149",
+    "name": "舞鶴 鼓",
+    "grade": "特別純米",
+    "brewery": "恩田酒造",
+    "prefecture": "新潟県",
+    "city": "長岡市",
+    "rice": "五百万石",
+    "polishing": "60%",
+    "tags": [],
+    "temp": "冷酒",
+    "date": "2026-02-13",
+    "shop": "TABI BAR",
+    "notes": "鶴が徳利と鼓を持ったイラストラベル（新潟県長岡市・恩田酒造の代表銘柄「舞鶴 鼓」）。",
+    "images": [
+      "images/sake-1795406445149_1795406445174_1.jpeg"
+    ]
+  },
+  {
     "id": "sake-1795405844290",
     "name": "光栄菊 Hello! KOUEIGIKU",
     "grade": "純米吟醸",
