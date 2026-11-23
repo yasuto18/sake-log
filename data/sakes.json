@@ -1,5 +1,25 @@
 [
   {
+    "id": "sake-1795406931707",
+    "name": "N-888 Premium",
+    "grade": "純米大吟醸",
+    "brewery": "新潟銘醸株式会社",
+    "prefecture": "新潟県",
+    "city": "小千谷市",
+    "rice": "越淡麗",
+    "polishing": "50%",
+    "tags": [
+      "火入れ"
+    ],
+    "temp": "常温（ひや）",
+    "date": "2026-02-13",
+    "shop": "ぽんしゅ館",
+    "notes": "1200回の試験醸造から生まれた極みの日本酒（ラベル表記：888th test brewing's was closest to the ideal sake of ours / Niigatameijo Co., Ltd.）。",
+    "images": [
+      "images/sake-1795406931707_1795406931737_1.jpeg"
+    ]
+  },
+  {
     "id": "sake-1795406656424",
     "name": "村祐 常盤ラベル",
     "grade": "純米大吟醸",
