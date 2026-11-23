@@ -1579,8 +1579,7 @@
       try {
         if (isTokenAuthenticated()) {
           const res = await githubRequest(`data/sakes.json?t=${Date.now()}`);
-          sakeData = JSON.parse(base64ToUtf8(res.content.replace(/
-/g, "")));
+          sakeData = JSON.parse(base64ToUtf8(res.content.replace(/\n/g, "")));
         } else {
           const res = await fetch(`data/sakes.json?t=${Date.now()}`, { cache: "no-store" });
           if (res.ok) sakeData = await res.json();
@@ -1625,8 +1624,7 @@
         try {
           const existing = await githubRequest(`data/sakes.json?t=${Date.now()}`);
           fileSha = existing.sha;
-          currentList = JSON.parse(base64ToUtf8(existing.content.replace(/
-/g, "")));
+          currentList = JSON.parse(base64ToUtf8(existing.content.replace(/\n/g, "")));
         } catch (e) {}
 
         const selectedTags = Array.from(document.querySelectorAll("#addTagSelector .tag-option.selected"))
@@ -1714,8 +1712,7 @@
 
       try {
         const existing = await githubRequest(`data/sakes.json?t=${Date.now()}`);
-        const currentList = JSON.parse(base64ToUtf8(existing.content.replace(/
-/g, "")));
+        const currentList = JSON.parse(base64ToUtf8(existing.content.replace(/\n/g, "")));
         const idx = currentList.findIndex(s => s.id === activeSakeId);
         if (idx === -1) throw new Error("対象の記録が見つかりませんでした。");
 
@@ -1801,8 +1798,7 @@
       try {
         showToast("🗑️ 削除処理中...");
         const existing = await githubRequest(`data/sakes.json?t=${Date.now()}`);
-        const currentList = JSON.parse(base64ToUtf8(existing.content.replace(/
-/g, "")));
+        const currentList = JSON.parse(base64ToUtf8(existing.content.replace(/\n/g, "")));
         const updatedList = currentList.filter(s => s.id !== id);
 
         await githubRequest("data/sakes.json", "PUT", {
