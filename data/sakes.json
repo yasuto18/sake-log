@@ -1,0 +1,42 @@
+[
+  {
+    "id": "sake-1795403323139",
+    "name": "本まぐろ 純米吟醸",
+    "grade": "純米吟醸",
+    "brewery": "田村酒造場",
+    "prefecture": "東京都",
+    "city": "福生市",
+    "rice": "",
+    "polishing": "",
+    "tags": [
+      "辛口"
+    ],
+    "temp": "冷酒",
+    "date": "2026-11-06",
+    "shop": "マグロマート",
+    "notes": "HON MAGURO / Made in Tokyo。ラベル表記：田村半十郎謹醸。",
+    "images": [
+      "images/sake-1795403323139_1.jpeg"
+    ]
+  },
+  {
+    "id": "sake-1795403219252",
+    "name": "本まぐろ 純米吟醸",
+    "grade": "純米吟醸",
+    "brewery": "田村酒造場",
+    "prefecture": "東京都",
+    "city": "福生市",
+    "rice": "",
+    "polishing": "",
+    "tags": [
+      "辛口"
+    ],
+    "temp": "冷酒",
+    "date": "2026-11-23",
+    "shop": "マグロマート",
+    "notes": "HON MAGURO / Made in Tokyo。ラベル表記：田村半十郎謹醸。",
+    "images": [
+      "images/sake-1795403219252_1.jpeg"
+    ]
+  }
+]
