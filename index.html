@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>酒日記 | Sake Log</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0E0F1A">
+  <!-- D3.js & TopoJSON for Japan Map -> City Drilldown -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <style>
+    :root {
+      --bg-base: #0E0F1A;
+      --bg-surface: #1A2B3A;
+      --border-muted: #3C4554;
+      --accent-plum: #7A3E5A;
+      --accent-gold: #C9A36A;
+      --text-main: #F3F4F6;
+      --text-sub: #A3B1C2;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      line-height: 1.5;
+      padding-bottom: 84px;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(14, 15, 26, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-muted);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: var(--bg-surface);
+      border: 1px solid var(--accent-gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-gold);
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .brand h1 {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--text-main);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      border: 1px solid var(--border-muted);
+      background: var(--bg-surface);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--accent-plum);
+      border-color: var(--accent-gold);
+      color: #FFF;
+    }
+
+    .btn-gold {
+      background: var(--accent-gold);
+      border-color: var(--accent-gold);
+      color: var(--bg-base);
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    /* Container */
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 14px 16px;
+    }
+
+    /* Dashboard Map Card */
+    .map-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-muted);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .map-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+
+    .map-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .breadcrumb-link {
+      color: var(--accent-gold);
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .map-stats {
+      display: flex;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .map-stats strong {
+      color: var(--accent-gold);
+      font-size: 14px;
+    }
+
+    .map-viewport {
+      width: 100%;
+      height: 300px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-muted);
+      border-radius: var(--radius-sm);
+      position: relative;
+      overflow: hidden;
+    }
+
+    #map-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .region-path {
+      stroke: var(--border-muted);
+      stroke-width: 0.7px;
+      cursor: pointer;
+      transition: fill 0.2s, stroke 0.2s;
+    }
+
+    .region-path:hover {
+      stroke: var(--accent-gold);
+      stroke-width: 1.3px;
+    }
+
+    .region-path.selected {
+      stroke: var(--accent-gold);
+      stroke-width: 1.8px;
+    }
+
+    .map-tooltip {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(14, 15, 26, 0.9);
+      border: 1px solid var(--accent-gold);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      pointer-events: none;
+      display: none;
+    }
+
+    .map-legend {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .legend-swatch {
+      width: 11px;
+      height: 11px;
+      border-radius: 2px;
+      border: 1px solid var(--border-muted);
+    }
+
+    .map-loading {
+      position: absolute;
+      inset: 0;
+      background: rgba(14, 15, 26, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      color: var(--accent-gold);
+    }
+
+    /* Search & Filter */
+    .filter-section {
+      margin-bottom: 14px;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .search-input {
+      flex: 1;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-muted);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      color: var(--text-main);
+      font-size: 14px;
+    }
+
+    .search-input::placeholder {
+      color: var(--text-sub);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent-gold);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+
+    .tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-chip {
+      white-space: nowrap;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-muted);
+      color: var(--text-sub);
+      cursor: pointer;
+    }
+
+    .tab-chip.active {
+      background: var(--accent-plum);
+      border-color: var(--accent-gold);
+      color: #FFF;
+    }
+
+    .active-area-banner {
+      display: none;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(122, 62, 90, 0.25);
+      border: 1px solid var(--accent-plum);
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+
+    /* Sake Grid */
+    .sake-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    @media (min-width: 600px) {
+      .sake-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .sake-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-muted);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s;
+    }
+
+    .sake-card:hover {
+      border-color: var(--accent-gold);
+    }
+
+    .card-img-wrap {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      background: var(--bg-base);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .card-area-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(122, 62, 90, 0.92);
+      border: 1px solid var(--accent-gold);
+      color: #FFF;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    .card-body {
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .card-grade {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--accent-gold);
+      letter-spacing: 0.04em;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-brewery {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: auto;
+      padding-top: 4px;
+    }
+
+    .mini-tag {
+      font-size: 10px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-muted);
+      color: var(--text-sub);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(14, 15, 26, 0.85);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--accent-gold);
+      border-radius: var(--radius-md);
+      width: 100%;
+      max-width: 520px;
+      max-height: 88vh;
+      overflow-y: auto;
+      padding: 18px;
+      position: relative;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-muted);
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent-gold);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-sub);
+      font-size: 22px;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    /* Detail View */
+    .detail-images {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .detail-images img {
+      width: 100%;
+      max-height: 260px;
+      object-fit: contain;
+      background: var(--bg-base);
+      border: 1px solid var(--border-muted);
+      border-radius: var(--radius-sm);
+    }
+
+    .detail-location-box {
+      background: var(--bg-base);
+      border: 1px solid var(--accent-plum);
+      border-left: 4px solid var(--accent-gold);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .detail-location-label {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .detail-location-value {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .spec-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .spec-table th, .spec-table td {
+      padding: 8px 6px;
+      border-bottom: 1px solid var(--border-muted);
+      text-align: left;
+    }
+
+    .spec-table th {
+      width: 34%;
+      color: var(--text-sub);
+      font-weight: 600;
+    }
+
+    /* Form */
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .form-control {
+      width: 100%;
+      background: var(--bg-base);
+      border: 1px solid var(--border-muted);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      color: var(--text-main);
+      font-size: 14px;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--accent-gold);
+    }
+
+    .tag-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag-option {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border-muted);
+      background: var(--bg-base);
+      color: var(--text-sub);
+      cursor: pointer;
+    }
+
+    .tag-option.selected {
+      background: var(--accent-plum);
+      border-color: var(--accent-gold);
+      color: #FFF;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-icon">酒</div>
+    <h1>酒日記</h1>
+  </div>
+  <div class="header-actions">
+    <button class="btn" onclick="openModal('settings-modal')">設定</button>
+    <button class="btn btn-primary" onclick="openModal('add-modal')">＋ 記録</button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- ダッシュボード：日本地図（県ごと）→ 県（市区町村ごと） -->
+  <section class="map-card">
+    <div class="map-header">
+      <div class="map-breadcrumb" id="map-breadcrumb">
+        <span>日本全国（都道府県別）</span>
+      </div>
+      <div class="map-stats" id="map-stats">
+        <span>制覇: <strong id="stat-areas">0</strong></span>
+        <span>累計: <strong id="stat-total">0</strong>本</span>
+      </div>
+    </div>
+
+    <div class="map-viewport" id="map-viewport">
+      <svg id="map-svg"></svg>
+      <div class="map-tooltip" id="map-tooltip"></div>
+      <div class="map-loading" id="map-loading">地図データを読み込み中...</div>
+    </div>
+
+    <div class="map-legend">
+      <span>記録数:</span>
+      <div class="legend-item"><span class="legend-swatch" style="background:#1A2B3A"></span>0</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#3C4554"></span>1</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#7A3E5A"></span>2〜3</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#C9A36A"></span>4+</div>
+    </div>
+  </section>
+
+  <!-- 検索・特定名称フィルター（赤白ロゼオレンジ廃止） -->
+  <section class="filter-section">
+    <div class="search-row">
+      <input type="text" id="search-input" class="search-input" placeholder="銘柄・酒蔵・都道府県・市区町村・酒米で検索..." oninput="renderList()">
+    </div>
+    <div class="tabs" id="grade-tabs">
+      <button class="tab-chip active" data-grade="ALL" onclick="selectGrade('ALL', this)">すべて</button>
+      <button class="tab-chip" data-grade="純米大吟醸" onclick="selectGrade('純米大吟醸', this)">純米大吟醸</button>
+      <button class="tab-chip" data-grade="純米吟醸" onclick="selectGrade('純米吟醸', this)">純米吟醸</button>
+      <button class="tab-chip" data-grade="純米" onclick="selectGrade('純米', this)">純米・特別純米</button>
+      <button class="tab-chip" data-grade="本醸造・その他" onclick="selectGrade('本醸造・その他', this)">本醸造・その他</button>
+    </div>
+  </section>
+
+  <!-- エリア絞り込み中バナー -->
+  <div class="active-area-banner" id="active-area-banner">
+    <span id="active-area-label">絞り込み中: </span>
+    <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="resetMapToJapan()">全国へ戻る</button>
+  </div>
+
+  <!-- 日本酒一覧グリッド -->
+  <section class="sake-grid" id="sake-grid"></section>
+</div>
+
+<!-- 詳細モーダル（県と市区町村を明示表示） -->
+<div class="modal-backdrop" id="detail-modal" onclick="closeModalOnBackdrop(event, 'detail-modal')">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <div class="modal-title" id="detail-title">銘柄詳細</div>
+      <button class="close-btn" onclick="closeModal('detail-modal')">&times;</button>
+    </div>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<!-- 新規記録モーダル（GitHub API直接アップロード） -->
+<div class="modal-backdrop" id="add-modal" onclick="closeModalOnBackdrop(event, 'add-modal')">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <div class="modal-title">新しい日本酒を記録</div>
+      <button class="close-btn" onclick="closeModal('add-modal')">&times;</button>
+    </div>
+    <form id="add-form" onsubmit="submitSake(event)">
+      <div class="form-group">
+        <label class="form-label">ラベル写真（表・裏 最大2枚）</label>
+        <input type="file" id="sake-photos" class="form-control" accept="image/*" multiple>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">銘柄名 *</label>
+          <input type="text" id="f-name" class="form-control" placeholder="例: 獺祭 磨き二割三分" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">特定名称 *</label>
+          <select id="f-grade" class="form-control" required>
+            <option value="純米大吟醸">純米大吟醸</option>
+            <option value="純米吟醸">純米吟醸</option>
+            <option value="特別純米">特別純米</option>
+            <option value="純米酒">純米酒</option>
+            <option value="大吟醸">大吟醸</option>
+            <option value="吟醸">吟醸</option>
+            <option value="特別本醸造">特別本醸造</option>
+            <option value="本醸造">本醸造</option>
+            <option value="普通酒・その他">普通酒・その他</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">酒蔵名 *</label>
+        <input type="text" id="f-brewery" class="form-control" placeholder="例: 旭酒造" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">都道府県 *</label>
+          <select id="f-prefecture" class="form-control" required></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">市区町村 *</label>
+          <input type="text" id="f-city" class="form-control" placeholder="例: 岩国市" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">酒米（原料米）</label>
+          <input type="text" id="f-rice" class="form-control" placeholder="例: 山田錦">
+        </div>
+        <div class="form-group">
+          <label class="form-label">精米歩合 (%)</label>
+          <input type="text" id="f-polishing" class="form-control" placeholder="例: 23%">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">製法・特徴タグ</label>
+        <div class="tag-selector" id="tag-selector">
+          <span class="tag-option" onclick="toggleTag(this)">生酒</span>
+          <span class="tag-option" onclick="toggleTag(this)">無濾過</span>
+          <span class="tag-option" onclick="toggleTag(this)">原酒</span>
+          <span class="tag-option" onclick="toggleTag(this)">火入れ</span>
+          <span class="tag-option" onclick="toggleTag(this)">おりがらみ</span>
+          <span class="tag-option" onclick="toggleTag(this)">にごり</span>
+          <span class="tag-option" onclick="toggleTag(this)">木桶仕込み</span>
+          <span class="tag-option" onclick="toggleTag(this)">スパークリング</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">飲んだ温度帯</label>
+          <select id="f-temp" class="form-control">
+            <option value="冷酒">冷酒</option>
+            <option value="常温（ひや）">常温（ひや）</option>
+            <option value="ぬる燗">ぬる燗</option>
+            <option value="熱燗">熱燗</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">購入日 / 飲用日</label>
+          <input type="date" id="f-date" class="form-control">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">購入店 / 飲食店 / 酒蔵</label>
+        <input type="text" id="f-shop" class="form-control" placeholder="例: 今代司酒造 直売店">
+      </div>
+      <div class="form-group">
+        <label class="form-label">テイスティングメモ</label>
+        <textarea id="f-notes" class="form-control" rows="2" placeholder="香り、甘辛バランス、合わせた料理など"></textarea>
+      </div>
+      <button type="submit" id="submit-btn" class="btn btn-gold" style="width:100%; justify-content:center; padding:10px;">GitHubへ保存して登録</button>
+    </form>
+  </div>
+</div>
+
+<!-- GitHub API 設定モーダル -->
+<div class="modal-backdrop" id="settings-modal" onclick="closeModalOnBackdrop(event, 'settings-modal')">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <div class="modal-title">GitHub 連携設定</div>
+      <button class="close-btn" onclick="closeModal('settings-modal')">&times;</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">GitHub Owner (ユーザー名)</label>
+      <input type="text" id="cfg-owner" class="form-control" placeholder="yasuto18">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Repository 名</label>
+      <input type="text" id="cfg-repo" class="form-control" placeholder="sake-log">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Personal Access Token (repo権限)</label>
+      <input type="password" id="cfg-token" class="form-control" placeholder="ghp_xxxxxxxxxxxx">
+    </div>
+    <button class="btn btn-gold" style="width:100%; justify-content:center;" onclick="saveSettings()">設定を保存</button>
+  </div>
+</div>
+
+<script>
+  // 47都道府県コードマスター（JIS X 0401）
+  const PREFECTURES = [
+    { code: "01", name: "北海道" }, { code: "02", name: "青森県" }, { code: "03", name: "岩手県" },
+    { code: "04", name: "宮城県" }, { code: "05", name: "秋田県" }, { code: "06", name: "山形県" },
+    { code: "07", name: "福島県" }, { code: "08", name: "茨城県" }, { code: "09", name: "栃木県" },
+    { code: "10", name: "群馬県" }, { code: "11", name: "埼玉県" }, { code: "12", name: "千葉県" },
+    { code: "13", name: "東京都" }, { code: "14", name: "神奈川県" }, { code: "15", name: "新潟県" },
+    { code: "16", name: "富山県" }, { code: "17", name: "石川県" }, { code: "18", name: "福井県" },
+    { code: "19", name: "山梨県" }, { code: "20", name: "長野県" }, { code: "21", name: "岐阜県" },
+    { code: "22", name: "静岡県" }, { code: "23", name: "愛知県" }, { code: "24", name: "三重県" },
+    { code: "25", name: "滋賀県" }, { code: "26", name: "京都府" }, { code: "27", name: "大阪府" },
+    { code: "28", name: "兵庫県" }, { code: "29", name: "奈良県" }, { code: "30", name: "和歌山県" },
+    { code: "31", name: "鳥取県" }, { code: "32", name: "島根県" }, { code: "33", name: "岡山県" },
+    { code: "34", name: "広島県" }, { code: "35", name: "山口県" }, { code: "36", name: "徳島県" },
+    { code: "37", name: "香川県" }, { code: "38", name: "愛媛県" }, { code: "39", name: "高知県" },
+    { code: "40", name: "福岡県" }, { code: "41", name: "佐賀県" }, { code: "42", name: "長崎県" },
+    { code: "43", name: "熊本県" }, { code: "44", name: "大分県" }, { code: "45", name: "宮崎県" },
+    { code: "46", name: "鹿児島県" }, { code: "47", name: "沖縄県" }
+  ];
+
+  // GeoJSONデータソース（都道府県全体 & 都道府県別市区町村）
+  const JAPAN_PREF_GEOJSON_URL = "https://raw.githubusercontent.com/dataofjapan/land/master/japan.geojson";
+  const CITY_GEOJSON_BASE_URL = "https://raw.githubusercontent.com/niiyz/JapanCityGeoJson/master/geojson/prefectures";
+
+  // 初期サンプルデータ（data/sakes.json が存在しない場合のプレビュー用）
+  const SAMPLE_SAKES = [
+    {
+      id: "sake-001",
+      name: "獺祭 無濾過純米大吟醸 磨き二割三分",
+      grade: "純米大吟醸",
+      brewery: "旭酒造",
+      prefecture: "山口県",
+      city: "岩国市",
+      rice: "山田錦",
+      polishing: "23%",
+      tags: ["無濾過", "生酒"],
+      temp: "冷酒",
+      date: "2026-09-30",
+      shop: "公式予約",
+      notes: "華やかな吟醸香と透明感のある甘み。",
+      images: []
+    },
+    {
+      id: "sake-002",
+      name: "今代司 純米大吟醸",
+      grade: "純米大吟醸",
+      brewery: "今代司酒造",
+      prefecture: "新潟県",
+      city: "新潟市中央区",
+      rice: "五百万石",
+      polishing: "50%",
+      tags: ["火入れ"],
+      temp: "冷酒",
+      date: "2026-02-13",
+      shop: "今代司酒造 直売店",
+      notes: "酒蔵見学にて試飲・購入。スッキリとしたキレのある味わい。",
+      images: []
+    },
+    {
+      id: "sake-003",
+      name: "澤乃井 純米大吟醸 芳醸 参拾伍",
+      grade: "純米大吟醸",
+      brewery: "小澤酒造",
+      prefecture: "東京都",
+      city: "青梅市",
+      rice: "山田錦",
+      polishing: "35%",
+      tags: ["火入れ"],
+      temp: "冷酒",
+      date: "2024-08-17",
+      shop: "小澤酒造 利き酒処",
+      notes: "御岳渓谷の仕込み水らしい清冽な口当たり。",
+      images: []
+    },
+    {
+      id: "sake-004",
+      name: "いづみ橋 恵 青ラベル 純米吟醸",
+      grade: "純米吟醸",
+      brewery: "泉橋酒造",
+      prefecture: "神奈川県",
+      city: "海老名市",
+      rice: "山田錦",
+      polishing: "58%",
+      tags: ["火入れ"],
+      temp: "常温（ひや）",
+      date: "2025-06-11",
+      shop: "和酒BAL だんない",
+      notes: "栽培醸造蔵ならではの米の旨味。食中酒に最適。",
+      images: []
+    }
+  ];
+
+  // アプリ状態
+  let sakeList = [];
+  let currentGrade = "ALL";
+  let mapLevel = "japan"; // "japan" | "prefecture"
+  let selectedPrefecture = null; // 例: "新潟県"
+  let selectedCity = null;       // 例: "新潟市中央区"
+
+  // GeoJSONキャッシュ
+  let japanGeoCache = null;
+  const cityGeoCache = {};
+
+  // 初期化
+  document.addEventListener("DOMContentLoaded", async () => {
+    populatePrefectureSelect();
+    loadSettingsToForm();
+    document.getElementById("f-date").valueAsDate = new Date();
+    await loadSakeData();
+    await renderJapanMap();
+    renderList();
+  });
+
+  function populatePrefectureSelect() {
+    const sel = document.getElementById("f-prefecture");
+    PREFECTURES.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.name;
+      opt.textContent = p.name;
+      sel.appendChild(opt);
+    });
+  }
+
+  async function loadSakeData() {
+    try {
+      const res = await fetch(`data/sakes.json?t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        sakeList = Array.isArray(data) && data.length > 0 ? data : SAMPLE_SAKES;
+      } else {
+        sakeList = SAMPLE_SAKES;
+      }
+    } catch (e) {
+      sakeList = SAMPLE_SAKES;
+    }
+  }
+
+  // ヒートマップカラー算出
+  function getHeatmapColor(count) {
+    if (!count || count === 0) return "#1A2B3A";
+    if (count === 1) return "#3C4554";
+    if (count <= 3) return "#7A3E5A";
+    return "#C9A36A";
+  }
+
+  // Step 1: 日本全国（都道府県別）マップ描画
+  async function renderJapanMap() {
+    mapLevel = "japan";
+    selectedPrefecture = null;
+    selectedCity = null;
+    updateBreadcrumbAndBanner();
+
+    const loading = document.getElementById("map-loading");
+    loading.style.display = "flex";
+
+    try {
+      if (!japanGeoCache) {
+        const res = await fetch(JAPAN_PREF_GEOJSON_URL);
+        japanGeoCache = await res.json();
+      }
+
+      // 都道府県ごとの件数集計
+      const counts = {};
+      sakeList.forEach(s => {
+        counts[s.prefecture] = (counts[s.prefecture] || 0) + 1;
+      });
+
+      const conqueredCount = Object.keys(counts).length;
+      document.getElementById("stat-areas").textContent = `${conqueredCount}/47県`;
+      document.getElementById("stat-total").textContent = sakeList.length;
+
+      drawGeoJsonMap(japanGeoCache, (feature) => {
+        const rawName = feature.properties.nam_ja || feature.properties.name || "";
+        // "Tokyo To" や "Hokkaido" 表記揺れ吸収
+        const prefObj = PREFECTURES.find(p => rawName.includes(p.name.replace(/[都府県]$/, "")) || p.name === rawName);
+        return prefObj ? prefObj.name : rawName;
+      }, counts, (prefName) => {
+        renderPrefectureMap(prefName);
+      });
+    } catch (err) {
+      console.error("Japan Map Load Error:", err);
+    } finally {
+      loading.style.display = "none";
+    }
+  }
+
+  // Step 2: 選択した都道府県の市区町村マップへドリルダウン
+  async function renderPrefectureMap(prefName) {
+    const prefObj = PREFECTURES.find(p => p.name === prefName);
+    if (!prefObj) return;
+
+    mapLevel = "prefecture";
+    selectedPrefecture = prefName;
+    selectedCity = null;
+    updateBreadcrumbAndBanner();
+    renderList();
+
+    const loading = document.getElementById("map-loading");
+    loading.style.display = "flex";
+
+    try {
+      if (!cityGeoCache[prefObj.code]) {
+        const url = `${CITY_GEOJSON_BASE_URL}/${prefObj.code}.json`;
+        const res = await fetch(url);
+        cityGeoCache[prefObj.code] = await res.json();
+      }
+
+      const prefSakes = sakeList.filter(s => s.prefecture === prefName);
+      const cityCounts = {};
+      prefSakes.forEach(s => {
+        cityCounts[s.city] = (cityCounts[s.city] || 0) + 1;
+      });
+
+      document.getElementById("stat-areas").textContent = `${Object.keys(cityCounts).length}市区町村`;
+      document.getElementById("stat-total").textContent = prefSakes.length;
+
+      drawGeoJsonMap(cityGeoCache[prefObj.code], (feature) => {
+        const p = feature.properties;
+        // 政令指定都市の区対応（例: N03_003="新潟市", N03_004="中央区" -> "新潟市中央区"）
+        const city = p.N03_003 || "";
+        const ward = p.N03_004 || "";
+        if (city && ward && city !== ward) return `${city}${ward}`;
+        return ward || city || p.name || "不明";
+      }, cityCounts, (cityName) => {
+        // 同じ市区町村を再タップしたら県全体に戻す
+        selectedCity = (selectedCity === cityName) ? null : cityName;
+        updateBreadcrumbAndBanner();
+        highlightSelectedCity();
+        renderList();
+      });
+    } catch (err) {
+      console.error("City Map Load Error:", err);
+    } finally {
+      loading.style.display = "none";
+    }
+  }
+
+  // D3.js 汎用ポリゴン描画＋ズーム・パン対応
+  function drawGeoJsonMap(geoData, getNameFn, countsMap, onClickFn) {
+    const viewport = document.getElementById("map-viewport");
+    const width = viewport.clientWidth || 360;
+    const height = viewport.clientHeight || 300;
+    const tooltip = document.getElementById("map-tooltip");
+
+    const svg = d3.select("#map-svg");
+    svg.selectAll("*").remove();
+
+    const g = svg.append("g");
+
+    const zoom = d3.zoom()
+      .scaleExtent([1, 8])
+      .on("zoom", (event) => {
+        g.attr("transform", event.transform);
+      });
+    svg.call(zoom);
+
+    const projection = d3.geoMercator().fitExtent([[14, 14], [width - 14, height - 14]], geoData);
+    const pathGenerator = d3.geoPath().projection(projection);
+
+    g.selectAll("path")
+      .data(geoData.features)
+      .enter()
+      .append("path")
+      .attr("d", pathGenerator)
+      .attr("class", "region-path")
+      .attr("data-name", d => getNameFn(d))
+      .attr("fill", d => {
+        const name = getNameFn(d);
+        return getHeatmapColor(countsMap[name] || 0);
+      })
+      .on("mouseover", function(event, d) {
+        const name = getNameFn(d);
+        const cnt = countsMap[name] || 0;
+        tooltip.style.display = "block";
+        tooltip.innerHTML = `<strong>${name}</strong>：${cnt}本`;
+      })
+      .on("mouseout", function() {
+        tooltip.style.display = "none";
+      })
+      .on("click", function(event, d) {
+        const name = getNameFn(d);
+        onClickFn(name);
+      });
+  }
+
+  function highlightSelectedCity() {
+    d3.selectAll(".region-path").classed("selected", function() {
+      return this.getAttribute("data-name") === selectedCity;
+    });
+  }
+
+  function resetMapToJapan() {
+    renderJapanMap();
+    renderList();
+  }
+
+  function updateBreadcrumbAndBanner() {
+    const bc = document.getElementById("map-breadcrumb");
+    const banner = document.getElementById("active-area-banner");
+    const bannerLabel = document.getElementById("active-area-label");
+
+    if (mapLevel === "japan") {
+      bc.innerHTML = `<span>日本全国（都道府県別）</span>`;
+      banner.style.display = "none";
+    } else {
+      bc.innerHTML = `
+        <span class="breadcrumb-link" onclick="resetMapToJapan()">日本全国</span>
+        <span style="color:var(--text-sub)">&rsaquo;</span>
+        <span>${selectedPrefecture}${selectedCity ? " " + selectedCity : ""}</span>
+      `;
+      banner.style.display = "flex";
+      bannerLabel.textContent = `エリア絞り込み: ${selectedPrefecture}${selectedCity ? " / " + selectedCity : "（全域）"}`;
+    }
+  }
+
+  // 特定名称タブ選択
+  function selectGrade(grade, btnEl) {
+    currentGrade = grade;
+    document.querySelectorAll(".tab-chip").forEach(el => el.classList.remove("active"));
+    btnEl.classList.add("active");
+    renderList();
+  }
+
+  // 一覧カード描画
+  function renderList() {
+    const grid = document.getElementById("sake-grid");
+    const keyword = document.getElementById("search-input").value.trim().toLowerCase();
+
+    const filtered = sakeList.filter(item => {
+      // エリア絞り込み
+      if (selectedPrefecture && item.prefecture !== selectedPrefecture) return false;
+      if (selectedCity && item.city !== selectedCity) return false;
+
+      // 特定名称絞り込み
+      if (currentGrade !== "ALL") {
+        if (currentGrade === "純米" && !["純米酒", "特別純米", "純米"].includes(item.grade)) return false;
+        if (currentGrade === "本醸造・その他" && !["大吟醸", "吟醸", "特別本醸造", "本醸造", "普通酒・その他"].includes(item.grade)) return false;
+        if (["純米大吟醸", "純米吟醸"].includes(currentGrade) && item.grade !== currentGrade) return false;
+      }
+
+      // キーワード検索
+      if (keyword) {
+        const target = [
+          item.name, item.brewery, item.prefecture, item.city,
+          item.rice, item.grade, ...(item.tags || [])
+        ].join(" ").toLowerCase();
+        if (!target.includes(keyword)) return false;
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:32px; color:var(--text-sub); font-size:13px;">該当する日本酒の記録がありません</div>`;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(item => {
+      const thumb = (item.images && item.images.length > 0)
+        ? item.images[0]
+        : `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400"><rect width="300" height="400" fill="%230E0F1A"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%23C9A36A" font-size="22" font-family="sans-serif">${encodeURIComponent(item.name.slice(0, 6))}</text></svg>`;
+
+      const tagsHtml = (item.tags || []).slice(0, 3).map(t => `<span class="mini-tag">#${t}</span>`).join("");
+
+      return `
+        <article class="sake-card" onclick="openDetail('${item.id}')">
+          <div class="card-img-wrap">
+            <img src="${thumb}" alt="${item.name}" loading="lazy">
+            <span class="card-area-badge">${item.prefecture}・${item.city}</span>
+          </div>
+          <div class="card-body">
+            <div class="card-grade">${item.grade}</div>
+            <h2 class="card-title">${item.name}</h2>
+            <div class="card-brewery">${item.brewery}</div>
+            <div class="card-tags">${tagsHtml}</div>
+          </div>
+        </article>
+      `;
+    }).join("");
+  }
+
+  // 詳細モーダル表示（県と市区町村を明示＋クリックで地図ジャンプ）
+  function openDetail(id) {
+    const item = sakeList.find(s => s.id === id);
+    if (!item) return;
+
+    document.getElementById("detail-title").textContent = item.name;
+
+    const imagesHtml = (item.images && item.images.length > 0)
+      ? `<div class="detail-images">${item.images.map(src => `<img src="${src}" alt="${item.name}">`).join("")}</div>`
+      : "";
+
+    const tagsText = (item.tags && item.tags.length > 0) ? item.tags.map(t => `#${t}`).join(" ") : "—";
+
+    document.getElementById("detail-content").innerHTML = `
+      ${imagesHtml}
+      <div class="detail-location-box" onclick="jumpToLocation('${item.prefecture}', '${item.city}')">
+        <div>
+          <div class="detail-location-label">産地（タップで市区町村マップを表示）</div>
+          <div class="detail-location-value">${item.prefecture} ${item.city}</div>
+        </div>
+        <span style="color:var(--accent-gold); font-size:13px;">地図で見る &rsaquo;</span>
+      </div>
+      <table class="spec-table">
+        <tr><th>特定名称</th><td style="color:var(--accent-gold); font-weight:700;">${item.grade}</td></tr>
+        <tr><th>酒蔵</th><td>${item.brewery}</td></tr>
+        <tr><th>都道府県</th><td>${item.prefecture}</td></tr>
+        <tr><th>市区町村</th><td>${item.city}</td></tr>
+        <tr><th>酒米 / 精米歩合</th><td>${item.rice || "—"} ${item.polishing ? `/ ${item.polishing}` : ""}</td></tr>
+        <tr><th>製法・特徴</th><td>${tagsText}</td></tr>
+        <tr><th>飲んだ温度帯</th><td>${item.temp || "—"}</td></tr>
+        <tr><th>購入日 / 飲用日</th><td>${item.date || "—"}</td></tr>
+        <tr><th>購入店 / 場所</th><td>${item.shop || "—"}</td></tr>
+        <tr><th>メモ</th><td>${item.notes || "—"}</td></tr>
+      </table>
+    `;
+
+    openModal("detail-modal");
+  }
+
+  async function jumpToLocation(prefecture, city) {
+    closeModal("detail-modal");
+    await renderPrefectureMap(prefecture);
+    selectedCity = city;
+    updateBreadcrumbAndBanner();
+    highlightSelectedCity();
+    renderList();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // タグ選択トグル
+  function toggleTag(el) {
+    el.classList.toggle("selected");
+  }
+
+  // モーダル制御
+  function openModal(id) {
+    document.getElementById(id).classList.add("open");
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove("open");
+  }
+
+  function closeModalOnBackdrop(e, id) {
+    if (e.target.id === id) closeModal(id);
+  }
+
+  // GitHub API 設定保存
+  function saveSettings() {
+    localStorage.setItem("sake_gh_owner", document.getElementById("cfg-owner").value.trim());
+    localStorage.setItem("sake_gh_repo", document.getElementById("cfg-repo").value.trim());
+    localStorage.setItem("sake_gh_token", document.getElementById("cfg-token").value.trim());
+    alert("設定を保存しました。");
+    closeModal("settings-modal");
+  }
+
+  function loadSettingsToForm() {
+    document.getElementById("cfg-owner").value = localStorage.getItem("sake_gh_owner") || "";
+    document.getElementById("cfg-repo").value = localStorage.getItem("sake_gh_repo") || "sake-log";
+    document.getElementById("cfg-token").value = localStorage.getItem("sake_gh_token") || "";
+  }
+
+  // GitHub API 経由で画像と data/sakes.json を直接コミット
+  async function submitSake(e) {
+    e.preventDefault();
+    const owner = localStorage.getItem("sake_gh_owner");
+    const repo = localStorage.getItem("sake_gh_repo");
+    const token = localStorage.getItem("sake_gh_token");
+
+    if (!owner || !repo || !token) {
+      alert("先に右上の「設定」からGitHub Owner / Repo / Tokenを入力してください。");
+      openModal("settings-modal");
+      return;
+    }
+
+    const btn = document.getElementById("submit-btn");
+    btn.disabled = true;
+    btn.textContent = "アップロード中...";
+
+    try {
+      const files = Array.from(document.getElementById("sake-photos").files).slice(0, 2);
+      const uploadedPaths = [];
+      const id = `sake-${Date.now()}`;
+
+      // 1. 画像アップロード
+      for (let i = 0; i < files.length; i++) {
+        const base64 = await fileToBase64(files[i]);
+        const ext = files[i].name.split(".").pop() || "jpg";
+        const path = `images/${id}_${i + 1}.${ext}`;
+        await githubPutFile(owner, repo, token, path, base64, `Add sake image ${path}`);
+        uploadedPaths.push(path);
+      }
+
+      // 2. 既存 sakes.json の取得（SHA取得含む）
+      let currentData = [];
+      let fileSha = null;
+      const getRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data/sakes.json`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (getRes.ok) {
+        const jsonMeta = await getRes.json();
+        fileSha = jsonMeta.sha;
+        const decoded = decodeURIComponent(escape(atob(jsonMeta.content.replace(/\n/g, ""))));
+        currentData = JSON.parse(decoded);
+      }
+
+      // 3. 新規レコード作成
+      const selectedTags = Array.from(document.querySelectorAll("#tag-selector .tag-option.selected"))
+        .map(el => el.textContent.trim());
+
+      const newEntry = {
+        id,
+        name: document.getElementById("f-name").value.trim(),
+        grade: document.getElementById("f-grade").value,
+        brewery: document.getElementById("f-brewery").value.trim(),
+        prefecture: document.getElementById("f-prefecture").value,
+        city: document.getElementById("f-city").value.trim(),
+        rice: document.getElementById("f-rice").value.trim(),
+        polishing: document.getElementById("f-polishing").value.trim(),
+        tags: selectedTags,
+        temp: document.getElementById("f-temp").value,
+        date: document.getElementById("f-date").value,
+        shop: document.getElementById("f-shop").value.trim(),
+        notes: document.getElementById("f-notes").value.trim(),
+        images: uploadedPaths
+      };
+
+      currentData.unshift(newEntry);
+
+      // 4. sakes.json 更新コミット
+      const updatedContentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(currentData, null, 2))));
+      await githubPutFile(owner, repo, token, "data/sakes.json", updatedContentBase64, `Add sake: ${newEntry.name}`, fileSha);
+
+      sakeList = currentData;
+      closeModal("add-modal");
+      document.getElementById("add-form").reset();
+      await renderJapanMap();
+      renderList();
+      alert("日本酒の記録をGitHubへ保存しました！");
+    } catch (err) {
+      console.error(err);
+      alert("保存に失敗しました: " + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "GitHubへ保存して登録";
+    }
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function githubPutFile(owner, repo, token, path, contentBase64, message, sha = null) {
+    const body = { message, content: contentBase64 };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.message || "GitHub API Error");
+    }
+    return res.json();
+  }
+</script>
+</body>
+</html>
