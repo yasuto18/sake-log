@@ -699,18 +699,18 @@
       <h1>酒日記</h1>
     </div>
     <div class="header-actions">
-      <button class="btn" id="refresh-btn" onclick="refreshData()" title="最新データを再読み込み">
+      <button type="button" class="btn" id="refresh-btn" onclick="refreshData()" title="最新データを再読み込み">
         <span id="refresh-icon">↻</span> 更新
       </button>
-      <button class="btn" onclick="openModal('settings-modal')">設定</button>
-      <button class="btn btn-primary" onclick="openAddModal()">＋ 記録</button>
+      <button type="button" class="btn" onclick="openModal('settings-modal')">設定</button>
+      <button type="button" class="btn btn-primary" onclick="openAddModal()">＋ 記録</button>
     </div>
   </div>
 
   <!-- 画面上部ページ切り替えボタン -->
   <nav class="top-switcher">
-    <button class="switch-btn active" id="nav-list" onclick="switchPage('list')">🍶 一覧</button>
-    <button class="switch-btn" id="nav-dashboard" onclick="switchPage('dashboard')">🗾 ダッシュボード</button>
+    <button type="button" class="switch-btn active" id="nav-list" onclick="switchPage('list')">🍶 一覧</button>
+    <button type="button" class="switch-btn" id="nav-dashboard" onclick="switchPage('dashboard')">🗾 ダッシュボード</button>
   </nav>
 </header>
 
@@ -722,18 +722,18 @@
         <input type="text" id="search-input" class="search-input" placeholder="銘柄・酒蔵・都道府県・市区町村・酒米で検索..." oninput="renderList()">
       </div>
       <div class="tabs" id="grade-tabs">
-        <button class="tab-chip active" data-grade="ALL" onclick="selectGrade('ALL', this)">すべて</button>
-        <button class="tab-chip" data-grade="純米大吟醸" onclick="selectGrade('純米大吟醸', this)">純米大吟醸</button>
-        <button class="tab-chip" data-grade="純米吟醸" onclick="selectGrade('純米吟醸', this)">純米吟醸</button>
-        <button class="tab-chip" data-grade="純米" onclick="selectGrade('純米', this)">純米・特別純米</button>
-        <button class="tab-chip" data-grade="本醸造・その他" onclick="selectGrade('本醸造・その他', this)">本醸造・その他</button>
+        <button type="button" class="tab-chip active" data-grade="ALL" onclick="selectGrade('ALL', this)">すべて</button>
+        <button type="button" class="tab-chip" data-grade="純米大吟醸" onclick="selectGrade('純米大吟醸', this)">純米大吟醸</button>
+        <button type="button" class="tab-chip" data-grade="純米吟醸" onclick="selectGrade('純米吟醸', this)">純米吟醸</button>
+        <button type="button" class="tab-chip" data-grade="純米" onclick="selectGrade('純米', this)">純米・特別純米</button>
+        <button type="button" class="tab-chip" data-grade="本醸造・その他" onclick="selectGrade('本醸造・その他', this)">本醸造・その他</button>
       </div>
     </section>
 
     <!-- エリア絞り込み中バナー -->
     <div class="active-area-banner" id="active-area-banner">
       <span id="active-area-label">絞り込み中: </span>
-      <button class="btn" style="padding:3px 8px; font-size:11px;" onclick="clearAreaFilter()">解除</button>
+      <button type="button" class="btn" style="padding:3px 8px; font-size:11px;" onclick="clearAreaFilter()">解除</button>
     </div>
 
     <!-- 日本酒一覧グリッド -->
@@ -758,7 +758,7 @@
         <div class="map-breadcrumb" id="map-breadcrumb">
           <span>日本全国（都道府県別）</span>
         </div>
-        <button class="btn btn-gold" id="btn-filter-from-map" style="padding:4px 10px; font-size:12px; display:none;" onclick="goToListWithCurrentArea()">この地域の酒一覧 &rsaquo;</button>
+        <button type="button" class="btn btn-gold" id="btn-filter-from-map" style="padding:4px 10px; font-size:12px; display:none;" onclick="goToListWithCurrentArea()">この地域の酒一覧 &rsaquo;</button>
       </div>
 
       <div class="map-viewport" id="map-viewport">
@@ -785,7 +785,7 @@
   <div class="modal-panel">
     <div class="modal-header">
       <div class="modal-title" id="detail-title">銘柄詳細</div>
-      <button class="close-btn" onclick="closeModal('detail-modal')">&times;</button>
+      <button type="button" class="close-btn" onclick="closeModal('detail-modal')">&times;</button>
     </div>
     <div id="detail-content"></div>
   </div>
@@ -796,7 +796,7 @@
   <div class="modal-panel">
     <div class="modal-header">
       <div class="modal-title" id="form-modal-title">新しい日本酒を記録</div>
-      <button class="close-btn" onclick="closeModal('add-modal')">&times;</button>
+      <button type="button" class="close-btn" onclick="closeModal('add-modal')">&times;</button>
     </div>
     <form id="add-form" onsubmit="submitSake(event)">
       <input type="hidden" id="edit-id" value="">
@@ -903,7 +903,7 @@
   <div class="modal-panel">
     <div class="modal-header">
       <div class="modal-title">GitHub 連携設定</div>
-      <button class="close-btn" onclick="closeModal('settings-modal')">&times;</button>
+      <button type="button" class="close-btn" onclick="closeModal('settings-modal')">&times;</button>
     </div>
     <div class="form-group">
       <label class="form-label">GitHub Owner (ユーザー名)</label>
@@ -917,7 +917,7 @@
       <label class="form-label">Personal Access Token (repo権限)</label>
       <input type="password" id="cfg-token" class="form-control" placeholder="ghp_xxxxxxxxxxxx">
     </div>
-    <button class="btn btn-gold" style="width:100%; justify-content:center;" onclick="saveSettings()">設定を保存</button>
+    <button type="button" class="btn btn-gold" style="width:100%; justify-content:center;" onclick="saveSettings()">設定を保存</button>
   </div>
 </div>
 
@@ -1087,8 +1087,7 @@
         });
         if (apiRes.ok) {
           const meta = await apiRes.json();
-          const decoded = decodeURIComponent(escape(atob(meta.content.replace(/
-/g, ""))));
+          const decoded = decodeURIComponent(escape(atob(meta.content.replace(/\n/g, ""))));
           const parsed = JSON.parse(decoded);
           if (Array.isArray(parsed)) {
             sakeList = parsed;
@@ -1487,8 +1486,7 @@
     const item = sakeList.find(s => s.id === id);
     if (!item) return;
 
-    if (!confirm(`「${item.name}」の記録を削除しますか？
-（GitHub上のデータも削除されます）`)) {
+    if (!confirm(`「${item.name}」の記録を削除しますか？\n（GitHub上のデータも削除されます）`)) {
       return;
     }
 
@@ -1511,8 +1509,7 @@
 
       const jsonMeta = await getRes.json();
       const fileSha = jsonMeta.sha;
-      const decoded = decodeURIComponent(escape(atob(jsonMeta.content.replace(/
-/g, ""))));
+      const decoded = decodeURIComponent(escape(atob(jsonMeta.content.replace(/\n/g, ""))));
       const currentData = JSON.parse(decoded);
 
       const updatedData = currentData.filter(s => s.id !== id);
@@ -1576,8 +1573,7 @@
 
       alert("JSONの内容をフォームに反映しました！ラベル写真を選択して登録してください。");
     } catch (err) {
-      alert("JSONの形式が正しくありません。括弧の過不足などを確認してください。
-エラー: " + err.message);
+      alert("JSONの形式が正しくありません。括弧の過不足などを確認してください。\nエラー: " + err.message);
     }
   }
 
@@ -1653,8 +1649,7 @@
       if (getRes.ok) {
         const jsonMeta = await getRes.json();
         fileSha = jsonMeta.sha;
-        const decoded = decodeURIComponent(escape(atob(jsonMeta.content.replace(/
-/g, ""))));
+        const decoded = decodeURIComponent(escape(atob(jsonMeta.content.replace(/\n/g, ""))));
         currentData = JSON.parse(decoded);
       }
 
